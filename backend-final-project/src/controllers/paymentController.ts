@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import Stripe from "stripe";
 import nodemailer from "nodemailer";
-
 import {
   createOrderNotLoginUser,
   findNotLoginOrderByOrderId,
@@ -21,6 +20,7 @@ import {
   updateProductAfterSold,
   updateProductTotalSale,
 } from "../services/productService";
+require("dotenv").config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
