@@ -1,0 +1,226 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./database.db"
+}
+
+model User {
+  id           Int                 @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String              @unique
+  password     String
+  profileImage String              @default("https://images.ctfassets.net/lh3zuq09vnm2/yBDals8aU8RWtb0xLnPkI/19b391bda8f43e16e64d40b55561e5cd/How_tracking_user_behavior_on_your_website_can_improve_customer_experience.png")
+  addresses    Address[]
+  role         Role                @relation(fields: [roleId], references: [id])
+  roleId       Int
+  orders       Order[]
+  usedCoupon   UserCouponMapping[]
+  FavoriteItem FavoriteItem[]
+  reviews      Review[]
+  isActive     Boolean             @default(true)
+}
+
+model FavoriteItem {
+  productId Int
+  userId    Int
+  Product   Product @relation(fields: [productId], references: [id])
+  User      User    @relation(fields: [userId], references: [id])
+
+  @@id([productId, userId])
+}
+
+model Role {
+  id       Int    @id @default(autoincrement())
+  roleName String @unique // customer, admin, customer-service, ...
+  users    User[]
+}
+
+model Address {
+  id            Int     @id @default(autoincrement())
+  phoneNumber   String
+  streetAddress String // บ้านเลขที่ ชื่อคอนโด ถนน
+  subDistrict   String // ตำบล
+  district      String // อำเภอ
+  province      String // จังหวัด
+  postalCode    String // รหัสไปรษณีย์
+  user          User    @relation(fields: [userId], references: [id])
+  userId        Int
+  isActive      Boolean @default(true)
+}
+
+model Product {
+  id                      Int                 @id @default(autoincrement())
+  productName             String              @unique
+  description             String
+  type                    ProductType         @relation(fields: [typeId], references: [id])
+  typeId                  Int
+  brand                   ProductBrand        @relation(fields: [brandId], references: [id])
+  brandId                 Int
+  price                   Float
+  imageUrl                String
+  totalSales              Int                 @default(0)
+  productOptions          ProductOption[] // Size, Color (รวมทั้ง Quantity ของแต่ละแบบ)
+  orderItem               OrderItem[]
+  orderItemNotLogin       OrderItemNotLogin[]
+  productReviews          Review[]
+  userFavoriteThisProduct FavoriteItem[]
+  viewCount               Int                 @default(0)
+  isActive                Boolean             @default(true)
+}
+
+model ProductType {
+  id       Int                @id @default(autoincrement())
+  typeName String
+  products Product[]
+  brands   BrandTypeMapping[]
+  options  OptionName[]
+}
+
+model ProductBrand {
+  id       Int                @id @default(autoincrement())
+  name     String             @unique
+  products Product[]
+  types    BrandTypeMapping[]
+}
+
+model BrandTypeMapping {
+  productType    ProductType  @relation(fields: [productTypeId], references: [id])
+  productTypeId  Int
+  productBrand   ProductBrand @relation(fields: [productBrandId], references: [id])
+  productBrandId Int
+
+  @@id([productTypeId, productBrandId])
+}
+
+// สร้างเป็น ProductOption แทนการสร้าง model Size, model Color แยกเป็นของใครของมัน (แบ่งเป็น size หรือ color จาก optionName เอา เช่น {optionName: "US7", quantity: 3}, {optionName: "XL", quantity: 10}, {optionName: "Red", quantity: 5})
+model ProductOption {
+  id                Int                          @id @default(autoincrement())
+  optionName        String
+  quantity          Int
+  product           Product                      @relation(fields: [productId], references: [id])
+  productId         Int
+  totalSale         Int                          @default(0)
+  orderItem         OrderItem[]
+  orderItemNotLogin OrderItemNotLogin[]
+  productReviews    ProductOptionReviewMapping[]
+}
+
+model OptionName {
+  id         Int           @id @default(autoincrement())
+  name       String
+  useForType ProductType[]
+}
+
+model Order {
+  id              Int                 @id @default(autoincrement())
+  user            User                @relation(fields: [userId], references: [id])
+  userId          Int
+  products        OrderItem[]
+  totalAmount     Float
+  status          String // เช่น "pending", "shipped", "delivered"
+  orderUsedCoupon UserCouponMapping[]
+  createdAt       DateTime            @default(now())
+}
+
+model OrderItem {
+  id        Int           @id @default(autoincrement())
+  product   Product       @relation(fields: [productId], references: [id])
+  productId Int
+  option    ProductOption @relation(fields: [optionId], references: [id])
+  optionId  Int
+  quantity  Int
+  order     Order         @relation(fields: [orderId], references: [id])
+  orderId   Int
+}
+
+model OrderNotLogin {
+  id          Int                 @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  address     String
+  email       String
+  phoneNumber String
+  status      String
+  products    OrderItemNotLogin[]
+  createAt    DateTime            @default(now())
+}
+
+model OrderItemNotLogin {
+  id        Int           @id @default(autoincrement())
+  product   Product       @relation(fields: [productId], references: [id])
+  productId Int
+  option    ProductOption @relation(fields: [optionId], references: [id])
+  optionId  Int
+  quantity  Int
+  order     OrderNotLogin @relation(fields: [orderId], references: [id])
+  orderId   Int
+}
+
+model Coupon {
+  id                 Int                 @id @default(autoincrement())
+  couponName         String              @unique
+  couponCode         String              @unique
+  discount           Int
+  isActive           Boolean
+  userUsedThisCoupon UserCouponMapping[]
+}
+
+// เนื่องจาก model User กับ model Coupon เป็น many-to-many (จึงต้องสร้าง junction table เพื่อ record ว่า user ใช้ coupon ไหนไปบ้าง)
+model UserCouponMapping {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  couponId Int
+  orderId  Int
+  usedAt   DateTime @default(now())
+  User     User     @relation(fields: [userId], references: [id])
+  Order    Order    @relation(fields: [orderId], references: [id])
+  Coupon   Coupon   @relation(fields: [couponId], references: [id])
+
+  @@unique([userId, orderId, couponId])
+}
+
+model Review {
+  id            Int                          @id @default(autoincrement())
+  User          User                         @relation(fields: [userId], references: [id])
+  userId        Int
+  product       Product                      @relation(fields: [productId], references: [id])
+  productId     Int
+  productOption ProductOptionReviewMapping[]
+  ratingScore   Int
+  reviewContent String
+  reviewImages  ReviewImage[]
+  createdAt     DateTime                     @default(now())
+}
+
+model ProductOptionReviewMapping {
+  id              Int           @id @default(autoincrement())
+  reviewId        Int
+  productOptionId Int
+  Review          Review        @relation(fields: [reviewId], references: [id])
+  ProductOption   ProductOption @relation(fields: [productOptionId], references: [id])
+
+  @@unique([reviewId, productOptionId])
+}
+
+model ReviewImage {
+  id         Int    @id @default(autoincrement())
+  imageUrl   String
+  fromReview Review @relation(fields: [reviewId], references: [id])
+  reviewId   Int
+}
+
+model Asset {
+  id       Int    @id @default(autoincrement())
+  name     String @unique
+  imageUrl String
+}

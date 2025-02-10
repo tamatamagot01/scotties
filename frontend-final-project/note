@@ -1,0 +1,9 @@
+1. คำสั่งสำหรับตรวจสอบว่าไฟล์นี้ทำงานบน Client-Side หรือ Server-Side
+
+if (typeof window !== 'undefined') {
+    console.log('we are running on the client')
+} else {
+    console.log('we are running on the server');
+}
+
+--------------------------------------------------------
