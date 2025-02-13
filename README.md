@@ -17,7 +17,7 @@ Third-party API: News API, Nodemailer, Stripe
 Clone the repository and navigate into the project folder:
 
 ```bash
-git clone https://github.com/tamatamagot01/fullstack-project.git
+git clone https://github.com/tamatamagot01/scotties.git
 cd fullstack-project
 ```
 
@@ -44,7 +44,7 @@ npx prisma generate
 Start the backend development server:
 
 ```bash
-npm run dev
+npm run start
 ```
 
 ## 3. Set up the frontend environment
@@ -64,7 +64,7 @@ npm install
 Start the frontend development server:
 
 ```bash
-npm run dev
+npm run start
 ```
 
 ## 4. Set up environment variables
